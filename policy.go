@@ -105,7 +105,7 @@ func (p policies) Load(authToken string) error {
 	}
 
 	r, err := VaultRequest{goreq.Request{
-		Uri:             vaultPath(path.Join("/v1/secret", config.Vault.GkPolicies), ""),
+		Uri:             vaultPath(path.Join("/v1/secret/data", config.Vault.GkPolicies), ""),
 		MaxRedirects:    10,
 		RedirectHeaders: true,
 	}.WithHeader("X-Vault-Token", authToken)}.Do()
@@ -114,13 +114,15 @@ func (p policies) Load(authToken string) error {
 		switch r.StatusCode {
 		case 200:
 			resp := struct {
-				Data policies `json:"data"`
+				Data struct {
+					Data policies `json:"data"`
+				} `json:"data"`
 			}{}
 			if err := r.Body.FromJsonTo(&resp); err == nil {
 				for k, _ := range p {
 					delete(p, k)
 				}
-				for k, v := range resp.Data {
+				for k, v := range resp.Data.Data {
 					if v.Renewable == nil {
 						v.Renewable = &config.DefaultRenewable
 					}

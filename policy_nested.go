@@ -20,7 +20,7 @@ type secretsList struct {
 
 func (p policies) loadNestedPolicies(authToken string) error {
 
-	initialPolicyDir := path.Join("v1/secret", config.Vault.GkPolicies)
+	initialPolicyDir := path.Join("v1/secret/data", config.Vault.GkPolicies)
 
 	/* build a list of policy directories from Vault */
 	policyDirectories, err := getNestedPolicyDirs(initialPolicyDir, authToken)
@@ -114,8 +114,11 @@ func getDirList (path string, authToken string, nestedPolicies *[]string, subDir
 		switch r.StatusCode {
 		case 200:
 			scrts := new(secretsList)
+			resp := struct {
+				Data *secretsList `json:"data"`
+			}{scrts}
 
-			if err := r.Body.FromJsonTo(&scrts); err == nil {
+			if err := r.Body.FromJsonTo(&resp); err == nil {
 				for i := range scrts.Data.Keys {
 //					fmt.Println("policy-nested: getDirList: keys: #", i, " value =", scrts.Data.Keys[i])
 
@@ -168,11 +171,13 @@ func (tempPolicies policies) getPolicyFile (path string, authToken string) (erro
 		case 200:
 
 			resp := struct {
-				Data policies `json:"data"`
+				Data struct {
+					Data policies `json:"data"`
+				} `json:"data"`
 			}{}
 
 			if err := r.Body.FromJsonTo(&resp); err == nil {
-				for k, v := range resp.Data {
+				for k, v := range resp.Data.Data {
 					//fmt.Println("policy-nested: getPolicyFile: Key =", k, " Value =", v)
 					if _, ok := tempPolicies[k]; ok == true { //k already in map
 						/* report the fact that the Key is already in the map. Then continue. */
